@@ -244,7 +244,7 @@ int main()
 	const int max = 25; // Maximum value for PID controller
 	
 	// Gain constants for PID controller
-	float kP = 5;
+	float kP = 3;
 	float kI = 0;
 	float kD = 0;
 	

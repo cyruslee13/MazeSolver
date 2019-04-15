@@ -5,6 +5,11 @@
 #define F_CPU 20000000  // system clock is 20 MHz
 #include <util/delay.h> // uses F_CPU to achieve us and ms delays
 
+#define TURN_DELAY_MS 100
+#define INCH_DELAY_MS 100
+
+
+/****************** MOTOR CODE ******************/
 // Motor Initialization routine -- this function must be called
 //  before you use any of the above functions
 void motors_init()
@@ -31,6 +36,51 @@ void set_motor_power(unsigned int power_left, unsigned int power_right)
 	OCR0B = power_right;
 	OCR2B = power_left;
 }
+
+void inch()
+{
+    set_motor_power(10,10);
+    delay_ms(INCH_DELAY_MS);
+    read_sensors();
+	set_motor_power(0,0);
+
+}
+
+void turnLeft()
+{
+	// Make all output compare values 0
+    set_motor_power(0,0);
+
+	// Motor 1 reverse, motor 2 forward
+	OCR0A = 10;
+	OCR2B = 10;
+
+    delay_ms(TURN_DELAY_MS);
+
+	// Turn off both motors
+	OCR0A = 0;
+	OCR2B = 0;
+}
+
+void turnRight()
+{
+    // Make all output compare values 0
+    set_motor_power(0,0);
+
+	// Motor 1 forward, motor 2 reverse
+	OCR0B = 10;
+	OCR2A = 10;
+
+    delay_ms(TURN_DELAY_MS);
+
+	// Turn off both motors
+	OCR0B = 0;
+	OCR2A = 0;
+}
+
+/****************** End MOTOR CODE ******************/
+
+/****************** SESNOR CODE ******************/
 
 // delay for time_ms milliseconds by looping
 //  time_ms is a two-byte value that can range from 0 - 65535
@@ -84,6 +134,9 @@ void read_sensors()
 	lightDarkBits[4] = ((int)(values & (1 << 4)) == 1 << 4);
 }
 
+/****************** END SESNOR CODE ******************/
+
+/****************** LINE TRACKING CODE ******************/
 void trackLine()
 {
 
@@ -168,10 +221,63 @@ void trackLine()
 	}
 }
 
+// detectIntersection
+// This function should be called when an intersection is detected
+// Performs sensor reading & decision making logic to determine type of intersection,
+// traverse the intersection, and log the decision made
 void detectIntersection()
 {
+	// Stop robot
+	set_motor_power(0,0);
+
+	// Intersection is either left only or left & forward
+	if(lightDarkBits[0] == 1  && lightDarkBits[4] == 0)
+	{
+		inch();
+		if(lightDarkBits[2] == 0)
+		{
+			turnLeft();
+		}
+		else
+		{
+			turnLeft();
+			// TODO LOG DECISION
+		}
+
+	}
+	// Intersection is either right only or right & forward
+	else if(lightDarkBits[0] == 0 && lightDarkBits[4] == 1)
+	{
+		inch();
+		if(lightDarkBits[2] == 0)
+		{
+			turnRight();
+		}
+		else
+		{
+			// TODO LOG DECISION
+		}
+	}
+	// Intersection is either T or cross
+	else
+	{
+		inch();
+		turnLeft();
+		// TODO LOG DECISION
+	}
+
 
 }
+
+void uturn()
+{
+	turnLeft();
+	turnLeft();
+	// TOOD LOG DECISION
+}
+
+/****************** END LINE TRACKING CODE ******************/
+
 
 int main()
 {
@@ -188,6 +294,10 @@ int main()
 		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
 
+		}
+		else if(lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
+		{
+			uturn();
 		}
 		else
 		{

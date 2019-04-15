@@ -2,14 +2,8 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 
-volatile int test1;
-volatile int test2;
-
-void set_motor_power(unsigned int power_left, unsigned int power_right)
-{
-	OCR0B = power_right;
-	OCR2B = power_left;
-}
+#define F_CPU 20000000  // system clock is 20 MHz
+#include <util/delay.h> // uses F_CPU to achieve us and ms delays
 
 // Motor Initialization routine -- this function must be called
 //  before you use any of the above functions
@@ -32,8 +26,11 @@ void motors_init()
 	DDRB |= (1 << PORTB3);
 }
 
-#define F_CPU 20000000  // system clock is 20 MHz
-#include <util/delay.h> // uses F_CPU to achieve us and ms delays
+void set_motor_power(unsigned int power_left, unsigned int power_right)
+{
+	OCR0B = power_right;
+	OCR2B = power_left;
+}
 
 // delay for time_ms milliseconds by looping
 //  time_ms is a two-byte value that can range from 0 - 65535
@@ -59,7 +56,7 @@ volatile bool lightDarkBits[5];
 volatile int previous = 0;
 volatile int count0;
 
-volatile int *read_sensors()
+void read_sensors()
 {
 
 	lightDarkBits[5];
@@ -87,63 +84,99 @@ volatile int *read_sensors()
 	lightDarkBits[4] = ((int)(values & (1 << 4)) == 1 << 4);
 }
 
-ISR(PCINT1_vect)
+void trackLine()
 {
-	int isrPrevious = previous;
-	previous = PINC;
 
-	long timerVal = TCNT1;
+	int forward_motor_power = 25;
+	const int max = 25; // Maximum value for PID controller
 
-	test1 = isrPrevious & (1 << 0);
-	test2 = previous & (1 << 0);
+	int error = 0;  // Calculated error
 
-	if ((int)(isrPrevious & (1 << 0)) != (int)(previous & (1 << 0)))
+	// Gain constants for PID controller
+	float kP = 3;
+
+	int motor_power_left = forward_motor_power;
+	int motor_power_right = forward_motor_power;
+	set_motor_power(forward_motor_power, forward_motor_power);
+
+	//Calculate error
+	if (lightDarkBits[0] == 1 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
 	{
-		if (timerVal < LD_THRESHOLD)
+		if (lightDarkBits[1] == 1)
 		{
-			lightDarkBits[0] = 0;
+			error = 4;
 		}
-		hasItBeenReadYet[0] = 1;
-		count0 = timerVal;
+		else
+		{
+			error = 5;
+		}
+	}
+	if (lightDarkBits[1] == 1 && lightDarkBits[0] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
+	{
+		if (lightDarkBits[2] == 1)
+		{
+			error = 1;
+		}
+		else
+		{
+			error = 2;
+		}
+	}
+	if (lightDarkBits[2] == 1 && lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[4] == 0)
+	{
+		if (lightDarkBits[3] == 1)
+		{
+			error = -1;
+		}
+		else
+		{
+			error = 0;
+		}
+	}
+	if (lightDarkBits[3] == 1 && lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0)
+	{
+		if (lightDarkBits[4] == 1)
+		{
+			error = -4;
+		}
+		else
+		{
+			error = -2;
+		}
+	}
+	if (lightDarkBits[4] == 1 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[0] == 0)
+	{
+		error = -5;
+	}
+
+
+	int feedback = kP * error
+
+	// Cap feedback at max value
+	if (feedback > max)
+		feedback = max;
+	if (feedback < -max)
+		feedback = -max;
+
+	if (error == 0)
+	{
+		set_motor_power(forward_motor_power, forward_motor_power);
+	}
+	else
+	{
+		set_motor_power(forward_motor_power + feedback, forward_motor_power - feedback);
 	}
 }
 
-ISR(TIMER1_COMPA_vect)
+void detectIntersection()
 {
-	for (int i = 0; i < 5; ++i)
-	{
-		hasItBeenReadYet[i] = 1;
-	}
+
 }
 
 int main()
 {
 	// Initialize motors
 	motors_init();
-
-	int forward_motor_power = 25;
-
-	int motor_power_left = forward_motor_power;
-	int motor_power_right = forward_motor_power;
-	set_motor_power(forward_motor_power, forward_motor_power);
-
-	//Initialize sensors
-	//sensors_init();
-
-	//volatile int* sensorReadings;
-	int error = 0;  // Calculated error
-	int last_error; // Error at last iteration
-
-	const int max = 25; // Maximum value for PID controller
-
-	// Gain constants for PID controller
-	float kP = 3;
-	float kI = 0;
-	float kD = 0;
-
-	// Variables to store calculated PID values
-	int derivative;
-	int integral = 0;
 
 	// loop here forever to keep the program counter from
 	//  running off the end of our program
@@ -152,78 +185,14 @@ int main()
 		// Read sensors should return the byte containing whether each sensor was high or low
 		read_sensors();
 
-		last_error = error;
+		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
+		{
 
-		//Calculate error
-		if (lightDarkBits[0] == 1 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
-		{
-			if (lightDarkBits[1] == 1)
-			{
-				error = 4;
-			}
-			else
-			{
-				error = 5;
-			}
-		}
-		if (lightDarkBits[1] == 1 && lightDarkBits[0] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
-		{
-			if (lightDarkBits[2] == 1)
-			{
-				error = 1;
-			}
-			else
-			{
-				error = 2;
-			}
-		}
-		if (lightDarkBits[2] == 1 && lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[4] == 0)
-		{
-			if (lightDarkBits[3] == 1)
-			{
-				error = -1;
-			}
-			else
-			{
-				error = 0;
-			}
-		}
-		if (lightDarkBits[3] == 1 && lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0)
-		{
-			if (lightDarkBits[4] == 1)
-			{
-				error = -4;
-			}
-			else
-			{
-				error = -2;
-			}
-		}
-		if (lightDarkBits[4] == 1 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[0] == 0)
-		{
-			error = -5;
-		}
-
-		int derivative = error - last_error;
-		integral += error;
-
-		int feedback = kP * error + kI * integral + kD * derivative;
-
-		// Cap feedback at max value
-		if (feedback > max)
-			feedback = max;
-		if (feedback < -max)
-			feedback = -max;
-
-		if (error == 0)
-		{
-			set_motor_power(forward_motor_power, forward_motor_power);
 		}
 		else
 		{
-			set_motor_power(forward_motor_power + feedback, forward_motor_power - feedback);
+			trackLine();
 		}
 	}
-
 	return 0;
 }

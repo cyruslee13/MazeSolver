@@ -141,7 +141,7 @@ void read_sensors()
 	PORTC = 0x20; //Turn on LEDs
 	DDRC = 0x20;  //Stop charging
 
-	_delay_us(275);
+	_delay_us(325);
 
 	int values = PINC;
 	lightDarkBits[0] = ((int)(values & (1 << 0)) == 1 << 0);
@@ -240,15 +240,15 @@ void trackLine(float kP)
 
 void makeLoggedTurn(){
 	if(path[pathIndex] == 'R'){
-		turnLeft();
+		turnRight();
 	}
 	else if(path[pathIndex] == 'L'){
 		turnLeft();
 	}
 	else{
-		turnLeft();
-		//quarterInch();
+		quarterInch();
 	}
+	++pathIndex;
 }
 
 // detectIntersection
@@ -317,6 +317,7 @@ bool detectIntersectionSolved(){
 	if(lightDarkBits[0] == 1  && lightDarkBits[4] == 0)
 	{
 		inch();
+		//while(true){ set_motor_power(0,0);}
 		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
@@ -400,7 +401,7 @@ char simplifyPath(char first, char second){
 void shiftPath(){
 
 	for(int i = pathIndex - 1; i >=0; --i){
-		if(path[i] = 'e'){
+		if(path[i] == 'e'){
 			for(int j = i; j < pathIndex; ++j){
 				path[j] = path[j+1];
 			}
@@ -427,7 +428,7 @@ int main()
 while(1){
 		 //Read sensors should return the byte containing whether each sensor was high or low
 		read_sensors();
-		
+
 
 		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
@@ -452,7 +453,7 @@ while(1){
 			trackLine(7);
 		}
 	}
-		
+
 		//Handle path simplification
 		bool isDone = false;
 		while(!isDone){
@@ -460,7 +461,9 @@ while(1){
 			for(int i = pathIndex - 1; i >= 0; --i){
 				if(path[i] == 'U'){
 					isDone = false;
-					path[i] == simplifyPath(path[i -1], path[i + 1]);
+					path[i] = simplifyPath(path[i -1], path[i + 1]);
+					path[i - 1] = 'e';
+					path[i + 1] = 'e';
 					shiftPath();
 				}
 			}
@@ -473,18 +476,12 @@ while(1){
 		DDRB= 0xCE;
 		PORTB = 0x31;
 		
-		notButtonPress = ((int)(PINB & (1 << 4)) == 1 << 4) || ((int)(PINB & (1 << 5)) == 1 << 5) || ((int)(PINB & (1 << 1)) == 1 << 1);
-		
-		while(true){//placed at start
-			notButtonPress = ((int)(PINB & (1 << 4)) == 1 << 4) || ((int)(PINB & (1 << 5)) == 1 << 5) || ((int)(PINB & (1 << 1)) == 1 << 1);
-		}
-		
 		
 		read_sensors();
 		while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){
 			read_sensors();
 		}
-		
+		inch();
 		while (1)
 		{
 			// Read sensors should return the byte containing whether each sensor was high or low

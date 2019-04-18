@@ -103,6 +103,9 @@ void delay_ms(unsigned int time_ms)
 
 volatile int hasItBeenReadYet[5];
 volatile bool lightDarkBits[5];
+volatile char path[30];
+volatile int pathIndex = 0;
+
 volatile int previous = 0;
 volatile int count0;
 
@@ -203,7 +206,7 @@ void trackLine()
 	}
 
 
-	int feedback = kP * error
+	int feedback = kP * error;
 
 	// Cap feedback at max value
 	if (feedback > max)
@@ -237,11 +240,13 @@ void detectIntersection()
 		if(lightDarkBits[2] == 0)
 		{
 			turnLeft();
+			
 		}
 		else
 		{
-			turnLeft();
-			// TODO LOG DECISION
+			//turnLeft();
+			path[pathIndex++] = 'L';
+			while(true){}
 		}
 
 	}
@@ -255,15 +260,17 @@ void detectIntersection()
 		}
 		else
 		{
-			// TODO LOG DECISION
+			path[pathIndex++] = 'S';
+			while(true){}
 		}
 	}
 	// Intersection is either T or cross
 	else
 	{
 		inch();
-		turnLeft();
-		// TODO LOG DECISION
+		//turnLeft();
+		path[pathIndex++] = 'L';
+		while(true){}
 	}
 
 
@@ -271,9 +278,56 @@ void detectIntersection()
 
 void uturn()
 {
-	turnLeft();
-	turnLeft();
-	// TOOD LOG DECISION
+	//turnLeft();
+	//turnLeft();
+	path[pathIndex++] = 'U';
+	while(true){}
+}
+
+
+
+void finalEnd(){
+	while(1){
+		turnLeft();
+	}
+}
+
+char simplifyPath(char first, char second){
+	if(first == 'L'){
+		if(second == 'S'){
+			return 'R';
+		}
+		else if(second == 'L'){
+			return 'S';
+		}
+		else if(second == 'R'){
+			return 'U';
+		}
+	}
+	else if(first == 'S'){
+		if(second == 'L'){
+			return 'R';
+		}
+		else if(second == 'R'){
+			return 'L';
+		}
+	}
+	else if(first == 'R' && second == 'L'){
+		return 'U';
+	}
+}
+
+void shiftPath(){
+
+	for(int i = pathIndex - 1; i >=0; --i){
+		if(path[i] = 'e'){
+			for(int j = i; j < pathIndex; ++j){
+				path[j] = path[j+1];
+			}
+			--pathIndex;
+		}
+		
+	}
 }
 
 /****************** END LINE TRACKING CODE ******************/
@@ -283,6 +337,10 @@ int main()
 {
 	// Initialize motors
 	motors_init();
+	
+	for (int i = 0; i < 30; ++i){//initialize path to empty
+		path[i] = 'e';
+	}
 
 	// loop here forever to keep the program counter from
 	//  running off the end of our program
@@ -293,16 +351,67 @@ int main()
 
 		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
-
+			detectIntersection();
 		}
 		else if(lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
 		{
 			uturn();
+		}
+		else if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
+			set_motor_power(0, 0);
+			break;
 		}
 		else
 		{
 			trackLine();
 		}
 	}
+		
+		//Handle path simplification
+		bool isDone = false;
+		while(!isDone){
+			isDone = true;
+			for(int i = pathIndex - 1; i >= 0; --i){
+				if(path[i] == 'U'){
+					isDone = false;
+					path[i] == simplifyPath(path[i -1], path[i + 1]);
+					shiftPath();
+				}
+			}
+		}
+		
+		
+		
+		//start bot again with pre-programmed path when sees mid 3 dark
+		pathIndex = 0;
+		while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){//placed at start
+			
+		}
+		while (1)
+		{
+			// Read sensors should return the byte containing whether each sensor was high or low
+			read_sensors();
+
+			if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
+			{
+				inch();
+				if(path[pathIndex] == 'L'){
+					turnLeft();
+				}
+				else if (path[pathIndex] == 'R'){
+					turnRight();
+				}
+				else {
+					trackLine();
+				}
+			}
+			else if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
+				finalEnd();
+			}
+			else
+			{
+				trackLine();
+			}
+		}
 	return 0;
 }

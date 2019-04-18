@@ -5,8 +5,8 @@
 #define F_CPU 20000000  // system clock is 20 MHz
 #include <util/delay.h> // uses F_CPU to achieve us and ms delays
 
-#define TURN_DELAY_MS 100
-#define INCH_DELAY_MS 100
+#define TURN_DELAY_MS 735
+#define INCH_DELAY_MS 450
 
 
 /****************** MOTOR CODE ******************/
@@ -33,17 +33,31 @@ void motors_init()
 
 void set_motor_power(unsigned int power_left, unsigned int power_right)
 {
+	power_right = power_right - 2;
+	if(power_right > 200)
+	{
+		
+		power_right = 0;
+	}
 	OCR0B = power_right;
 	OCR2B = power_left;
 }
 
 void inch()
 {
-	set_motor_power(10,10);
+	set_motor_power(25,25);
 	delay_ms(INCH_DELAY_MS);
 	read_sensors();
 	set_motor_power(0,0);
 
+}
+
+void quarterInch()
+{
+	set_motor_power(25, 25);
+	delay_ms(INCH_DELAY_MS/4);
+	read_sensors();
+	set_motor_power(0,0);
 }
 
 void turnLeft()
@@ -52,8 +66,8 @@ void turnLeft()
 	set_motor_power(0,0);
 
 	// Motor 1 reverse, motor 2 forward
-	OCR0A = 10;
-	OCR2B = 10;
+	OCR0A = 25;
+	OCR2B = 25;
 
 	delay_ms(TURN_DELAY_MS);
 
@@ -68,8 +82,8 @@ void turnRight()
 	set_motor_power(0,0);
 
 	// Motor 1 forward, motor 2 reverse
-	OCR0B = 10;
-	OCR2A = 10;
+	OCR0B = 25;
+	OCR2A = 25;
 
 	delay_ms(TURN_DELAY_MS);
 
@@ -127,7 +141,7 @@ void read_sensors()
 	PORTC = 0x20; //Turn on LEDs
 	DDRC = 0x20;  //Stop charging
 
-	_delay_us(400);
+	_delay_us(275);
 
 	int values = PINC;
 	lightDarkBits[0] = ((int)(values & (1 << 0)) == 1 << 0);
@@ -140,7 +154,7 @@ void read_sensors()
 /****************** END SESNOR CODE ******************/
 
 /****************** LINE TRACKING CODE ******************/
-void trackLine()
+void trackLine(float kP)
 {
 
 	int forward_motor_power = 25;
@@ -149,7 +163,7 @@ void trackLine()
 	int error = 0;  // Calculated error
 
 	// Gain constants for PID controller
-	float kP = 3;
+
 
 	int motor_power_left = forward_motor_power;
 	int motor_power_right = forward_motor_power;
@@ -228,25 +242,25 @@ void trackLine()
 // This function should be called when an intersection is detected
 // Performs sensor reading & decision making logic to determine type of intersection,
 // traverse the intersection, and log the decision made
-void detectIntersection()
+bool detectIntersection()
 {
 	// Stop robot
 	set_motor_power(0,0);
+	quarterInch();
 
 	// Intersection is either left only or left & forward
 	if(lightDarkBits[0] == 1  && lightDarkBits[4] == 0)
 	{
 		inch();
-		if(lightDarkBits[2] == 0)
+		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
 			
 		}
 		else
 		{
-			//turnLeft();
+			turnLeft();
 			path[pathIndex++] = 'L';
-			while(true){}
 		}
 
 	}
@@ -254,34 +268,37 @@ void detectIntersection()
 	else if(lightDarkBits[0] == 0 && lightDarkBits[4] == 1)
 	{
 		inch();
-		if(lightDarkBits[2] == 0)
+		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnRight();
 		}
 		else
 		{
+			quarterInch();
 			path[pathIndex++] = 'S';
-			while(true){}
 		}
 	}
 	// Intersection is either T or cross
 	else
 	{
 		inch();
-		//turnLeft();
+		if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
+			return true;
+		}
+		turnLeft();
 		path[pathIndex++] = 'L';
-		while(true){}
 	}
 
+
+return false;
 
 }
 
 void uturn()
 {
-	//turnLeft();
-	//turnLeft();
+	turnLeft();
+	turnLeft();
 	path[pathIndex++] = 'U';
-	while(true){}
 }
 
 
@@ -344,18 +361,32 @@ int main()
 
 	// loop here forever to keep the program counter from
 	//  running off the end of our program
-	while (1)
-	{
+	//while (1)
+	//{
+		//inch();
+	//}
+while(1){
 		// Read sensors should return the byte containing whether each sensor was high or low
 		read_sensors();
+		
 
 		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
-			detectIntersection();
+			if(detectIntersection()){
+				break;
+			}
+			
+			for(int i = 0; i < 3000; ++i){
+				trackLine(25);
+			}
 		}
 		else if(lightDarkBits[0] == 0 && lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0 && lightDarkBits[4] == 0)
 		{
+			inch();
 			uturn();
+			for(int i = 0; i < 3000; ++i){
+				trackLine(25);
+			}
 		}
 		else if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
 			set_motor_power(0, 0);
@@ -363,7 +394,7 @@ int main()
 		}
 		else
 		{
-			trackLine();
+			trackLine(7);
 		}
 	}
 		
@@ -380,38 +411,44 @@ int main()
 			}
 		}
 		
-		
+		set_motor_power(0,0);
+		while(true){}
 		
 		//start bot again with pre-programmed path when sees mid 3 dark
 		pathIndex = 0;
+		DDRB= 0xEF;
+		PORTB = 0xEF;
+		
+		 
+		
 		while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){//placed at start
 			
 		}
-		while (1)
-		{
-			// Read sensors should return the byte containing whether each sensor was high or low
-			read_sensors();
-
-			if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
-			{
-				inch();
-				if(path[pathIndex] == 'L'){
-					turnLeft();
-				}
-				else if (path[pathIndex] == 'R'){
-					turnRight();
-				}
-				else {
-					trackLine();
-				}
-			}
-			else if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
-				finalEnd();
-			}
-			else
-			{
-				trackLine();
-			}
-		}
+		//while (1)
+		//{
+			//// Read sensors should return the byte containing whether each sensor was high or low
+			//read_sensors();
+//
+			//if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
+			//{
+				//inch();
+				//if(path[pathIndex] == 'L'){
+					//turnLeft();
+				//}
+				//else if (path[pathIndex] == 'R'){
+					//turnRight();
+				//}
+				//else {
+					//trackLine(7);
+				//}
+			//}
+			//else if (lightDarkBits[0] == 1 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 1){
+				//finalEnd();
+			//}
+			//else
+			//{
+				//trackLine(7);
+			//}
+		//}
 	return 0;
 }

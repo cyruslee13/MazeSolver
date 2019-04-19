@@ -141,7 +141,7 @@ void read_sensors()
 	PORTC = 0x20; //Turn on LEDs
 	DDRC = 0x20;  //Stop charging
 
-	_delay_us(325);
+	_delay_us(280);
 
 	int values = PINC;
 	lightDarkBits[0] = ((int)(values & (1 << 0)) == 1 << 0);

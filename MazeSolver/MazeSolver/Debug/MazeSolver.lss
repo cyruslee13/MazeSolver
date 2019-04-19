@@ -259,9 +259,9 @@ void finalEnd(){
  1ce:	ff 92       	push	r15
  1d0:	6b 01       	movw	r12, r22
  1d2:	7c 01       	movw	r14, r24
- 1d4:	87 e1       	ldi	r24, 0x17	; 23
+ 1d4:	8c e1       	ldi	r24, 0x1C	; 28
  1d6:	88 bd       	out	0x28, r24	; 40
- 1d8:	89 e1       	ldi	r24, 0x19	; 25
+ 1d8:	8e e1       	ldi	r24, 0x1E	; 30
  1da:	80 93 b4 00 	sts	0x00B4, r24	; 0x8000b4 <__TEXT_REGION_LENGTH__+0x7e00b4>
  1de:	80 91 2c 01 	lds	r24, 0x012C	; 0x80012c <lightDarkBits>
  1e2:	88 23       	and	r24, r24
@@ -369,9 +369,9 @@ void finalEnd(){
  2de:	61 15       	cp	r22, r1
  2e0:	71 05       	cpc	r23, r1
  2e2:	31 f4       	brne	.+12     	; 0x2f0 <trackLine+0x128>
- 2e4:	87 e1       	ldi	r24, 0x17	; 23
+ 2e4:	8c e1       	ldi	r24, 0x1C	; 28
  2e6:	88 bd       	out	0x28, r24	; 40
- 2e8:	89 e1       	ldi	r24, 0x19	; 25
+ 2e8:	8e e1       	ldi	r24, 0x1E	; 30
  2ea:	80 93 b4 00 	sts	0x00B4, r24	; 0x8000b4 <__TEXT_REGION_LENGTH__+0x7e00b4>
  2ee:	5d c0       	rjmp	.+186    	; 0x3aa <trackLine+0x1e2>
  2f0:	07 2e       	mov	r0, r23
@@ -383,21 +383,21 @@ void finalEnd(){
  2fe:	96 01       	movw	r18, r12
  300:	0e 94 ba 04 	call	0x974	; 0x974 <__mulsf3>
  304:	0e 94 1e 04 	call	0x83c	; 0x83c <__fixsfsi>
- 308:	6a 31       	cpi	r22, 0x1A	; 26
+ 308:	6f 31       	cpi	r22, 0x1F	; 31
  30a:	71 05       	cpc	r23, r1
  30c:	14 f0       	brlt	.+4      	; 0x312 <trackLine+0x14a>
- 30e:	69 e1       	ldi	r22, 0x19	; 25
+ 30e:	6e e1       	ldi	r22, 0x1E	; 30
  310:	70 e0       	ldi	r23, 0x00	; 0
- 312:	67 3e       	cpi	r22, 0xE7	; 231
+ 312:	62 3e       	cpi	r22, 0xE2	; 226
  314:	8f ef       	ldi	r24, 0xFF	; 255
  316:	78 07       	cpc	r23, r24
  318:	14 f4       	brge	.+4      	; 0x31e <trackLine+0x156>
- 31a:	67 ee       	ldi	r22, 0xE7	; 231
+ 31a:	62 ee       	ldi	r22, 0xE2	; 226
  31c:	7f ef       	ldi	r23, 0xFF	; 255
  31e:	9b 01       	movw	r18, r22
- 320:	27 5e       	subi	r18, 0xE7	; 231
+ 320:	22 5e       	subi	r18, 0xE2	; 226
  322:	3f 4f       	sbci	r19, 0xFF	; 255
- 324:	87 e1       	ldi	r24, 0x17	; 23
+ 324:	8c e1       	ldi	r24, 0x1C	; 28
  326:	90 e0       	ldi	r25, 0x00	; 0
  328:	86 1b       	sub	r24, r22
  32a:	97 0b       	sbc	r25, r23
@@ -418,16 +418,16 @@ void finalEnd(){
  34c:	96 01       	movw	r18, r12
  34e:	0e 94 ba 04 	call	0x974	; 0x974 <__mulsf3>
  352:	0e 94 1e 04 	call	0x83c	; 0x83c <__fixsfsi>
- 356:	6a 31       	cpi	r22, 0x1A	; 26
+ 356:	6f 31       	cpi	r22, 0x1F	; 31
  358:	71 05       	cpc	r23, r1
  35a:	14 f0       	brlt	.+4      	; 0x360 <trackLine+0x198>
- 35c:	69 e1       	ldi	r22, 0x19	; 25
+ 35c:	6e e1       	ldi	r22, 0x1E	; 30
  35e:	70 e0       	ldi	r23, 0x00	; 0
- 360:	67 3e       	cpi	r22, 0xE7	; 231
+ 360:	62 3e       	cpi	r22, 0xE2	; 226
  362:	8f ef       	ldi	r24, 0xFF	; 255
  364:	78 07       	cpc	r23, r24
  366:	dc f6       	brge	.-74     	; 0x31e <trackLine+0x156>
- 368:	67 ee       	ldi	r22, 0xE7	; 231
+ 368:	62 ee       	ldi	r22, 0xE2	; 226
  36a:	7f ef       	ldi	r23, 0xFF	; 255
  36c:	d8 cf       	rjmp	.-80     	; 0x31e <trackLine+0x156>
  36e:	6c ef       	ldi	r22, 0xFC	; 252
@@ -444,17 +444,17 @@ void finalEnd(){
  386:	b6 01       	movw	r22, r12
  388:	0e 94 ba 04 	call	0x974	; 0x974 <__mulsf3>
  38c:	0e 94 1e 04 	call	0x83c	; 0x83c <__fixsfsi>
- 390:	6a 31       	cpi	r22, 0x1A	; 26
+ 390:	6f 31       	cpi	r22, 0x1F	; 31
  392:	71 05       	cpc	r23, r1
  394:	14 f0       	brlt	.+4      	; 0x39a <trackLine+0x1d2>
- 396:	69 e1       	ldi	r22, 0x19	; 25
+ 396:	6e e1       	ldi	r22, 0x1E	; 30
  398:	70 e0       	ldi	r23, 0x00	; 0
- 39a:	67 3e       	cpi	r22, 0xE7	; 231
+ 39a:	62 3e       	cpi	r22, 0xE2	; 226
  39c:	8f ef       	ldi	r24, 0xFF	; 255
  39e:	78 07       	cpc	r23, r24
  3a0:	0c f0       	brlt	.+2      	; 0x3a4 <trackLine+0x1dc>
  3a2:	bd cf       	rjmp	.-134    	; 0x31e <trackLine+0x156>
- 3a4:	67 ee       	ldi	r22, 0xE7	; 231
+ 3a4:	62 ee       	ldi	r22, 0xE2	; 226
  3a6:	7f ef       	ldi	r23, 0xFF	; 255
  3a8:	ba cf       	rjmp	.-140    	; 0x31e <trackLine+0x156>
  3aa:	ff 90       	pop	r15

@@ -33,10 +33,10 @@ void motors_init()
 
 void set_motor_power(unsigned int power_left, unsigned int power_right)
 {
-	power_right = power_right - 2;
+	power_right = power_right - 4;
 	if(power_right > 200)
 	{
-		
+
 		power_right = 0;
 	}
 	OCR0B = power_right;
@@ -69,7 +69,14 @@ void turnLeft()
 	OCR0A = 25;
 	OCR2B = 25;
 
-	delay_ms(TURN_DELAY_MS);
+	delay_ms(367);
+
+	read_sensors();
+	// Wait until middle sensor detects line, this signifies that a full turn has completed
+	while(lightDarkBits[2] != 1)
+	{
+		read_sensors();
+	}
 
 	// Turn off both motors
 	OCR0A = 0;
@@ -85,7 +92,14 @@ void turnRight()
 	OCR0B = 25;
 	OCR2A = 25;
 
-	delay_ms(TURN_DELAY_MS);
+	delay_ms(367);
+
+	read_sensors();
+	// Wait until middle sensor detects line, this signifies that a full turn has completed
+	while(lightDarkBits[2] != 1)
+	{
+		read_sensors();
+	}
 
 	// Turn off both motors
 	OCR0B = 0;
@@ -157,8 +171,8 @@ void read_sensors()
 void trackLine(float kP)
 {
 
-	int forward_motor_power = 25;
-	const int max = 25; // Maximum value for PID controller
+	int forward_motor_power = 30;
+	const int max = 30; // Maximum value for PID controller
 
 	int error = 0;  // Calculated error
 
@@ -268,7 +282,7 @@ bool detectIntersection()
 		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
-			
+
 		}
 		else
 		{
@@ -321,7 +335,7 @@ bool detectIntersectionSolved(){
 		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
-			
+
 		}
 		else
 		{
@@ -360,7 +374,6 @@ bool detectIntersectionSolved(){
 
 void uturn()
 {
-	turnLeft();
 	turnLeft();
 	path[pathIndex++] = 'U';
 }
@@ -407,7 +420,7 @@ void shiftPath(){
 			}
 			--pathIndex;
 		}
-		
+
 	}
 }
 
@@ -418,7 +431,7 @@ int main()
 {
 	// Initialize motors
 	motors_init();
-	
+
 	for (int i = 0; i < 30; ++i){//initialize path to empty
 		path[i] = 'e';
 	}
@@ -435,7 +448,7 @@ while(1){
 			if(detectIntersection()){
 				break;
 			}
-			
+
 			for(int i = 0; i < 3000; ++i){
 				trackLine(25);
 			}
@@ -468,15 +481,15 @@ while(1){
 				}
 			}
 		}
-		
+
 		set_motor_power(0,0);
-		
+
 		//start bot again with pre-programmed path when sees mid 3 dark
 		pathIndex = 0;
 		DDRB= 0xCE;
 		PORTB = 0x31;
-		
-		
+
+
 		read_sensors();
 		while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){
 			read_sensors();
@@ -486,14 +499,14 @@ while(1){
 		{
 			// Read sensors should return the byte containing whether each sensor was high or low
 			read_sensors();
-			
+
 
 			if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 			{
 				if(detectIntersectionSolved()){
 					break;
 				}
-				
+
 				for(int i = 0; i < 3000; ++i){
 					trackLine(25);
 				}

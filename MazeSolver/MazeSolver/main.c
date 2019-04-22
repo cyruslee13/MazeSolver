@@ -9,104 +9,7 @@
 #define INCH_DELAY_MS 450
 
 
-/****************** MOTOR CODE ******************/
-// Motor Initialization routine -- this function must be called
-//  before you use any of the above functions
-void motors_init()
-{
-	// configure for inverted PWM output on motor control pins:
-	//  set OCxx on compare match, clear on timer overflow
-	//  Timer0 and Timer2 count up from 0 to 255
-	TCCR0A = TCCR2A = 0xF3;
 
-	// use the system clock/8 (=2.5 MHz) as the timer clock
-	TCCR0B = TCCR2B = 0x03;
-
-	// initialize all PWMs to 0% duty cycle (braking)
-	OCR0A = OCR0B = OCR2A = OCR2B = 0;
-
-	// set PWM pins as digital outputs (the PWM signals will not
-	// appear on the lines if they are digital inputs)
-	DDRD |= (1 << PORTD3) | (1 << PORTD5) | (1 << PORTD6);
-	DDRB |= (1 << PORTB3);
-}
-
-void set_motor_power(unsigned int power_left, unsigned int power_right)
-{
-	power_right = power_right - 4;
-	if(power_right > 200)
-	{
-
-		power_right = 0;
-	}
-	OCR0B = power_right;
-	OCR2B = power_left;
-}
-
-void inch()
-{
-	set_motor_power(25,25);
-	delay_ms(INCH_DELAY_MS);
-	read_sensors();
-	set_motor_power(0,0);
-
-}
-
-void quarterInch()
-{
-	set_motor_power(25, 25);
-	delay_ms(INCH_DELAY_MS/4);
-	read_sensors();
-	set_motor_power(0,0);
-}
-
-void turnLeft()
-{
-	// Make all output compare values 0
-	set_motor_power(0,0);
-
-	// Motor 1 reverse, motor 2 forward
-	OCR0A = 25;
-	OCR2B = 25;
-
-	delay_ms(367);
-
-	read_sensors();
-	// Wait until middle sensor detects line, this signifies that a full turn has completed
-	while(lightDarkBits[2] != 1)
-	{
-		read_sensors();
-	}
-
-	// Turn off both motors
-	OCR0A = 0;
-	OCR2B = 0;
-}
-
-void turnRight()
-{
-	// Make all output compare values 0
-	set_motor_power(0,0);
-
-	// Motor 1 forward, motor 2 reverse
-	OCR0B = 25;
-	OCR2A = 25;
-
-	delay_ms(367);
-
-	read_sensors();
-	// Wait until middle sensor detects line, this signifies that a full turn has completed
-	while(lightDarkBits[2] != 1)
-	{
-		read_sensors();
-	}
-
-	// Turn off both motors
-	OCR0B = 0;
-	OCR2A = 0;
-}
-
-/****************** End MOTOR CODE ******************/
 
 /****************** SESNOR CODE ******************/
 
@@ -167,12 +70,118 @@ void read_sensors()
 
 /****************** END SESNOR CODE ******************/
 
+/****************** MOTOR CODE ******************/
+// Motor Initialization routine -- this function must be called
+//  before you use any of the above functions
+void motors_init()
+{
+	// configure for inverted PWM output on motor control pins:
+	//  set OCxx on compare match, clear on timer overflow
+	//  Timer0 and Timer2 count up from 0 to 255
+	TCCR0A = TCCR2A = 0xF3;
+
+	// use the system clock/8 (=2.5 MHz) as the timer clock
+	TCCR0B = TCCR2B = 0x03;
+
+	// initialize all PWMs to 0% duty cycle (braking)
+	OCR0A = OCR0B = OCR2A = OCR2B = 0;
+
+	// set PWM pins as digital outputs (the PWM signals will not
+	// appear on the lines if they are digital inputs)
+	DDRD |= (1 << PORTD3) | (1 << PORTD5) | (1 << PORTD6);
+	DDRB |= (1 << PORTB3);
+}
+
+void set_motor_power(unsigned int power_left, unsigned int power_right)
+{
+	power_right = power_right - 2;
+	if(power_right > 200)
+	{
+		
+		power_right = 0;
+	}
+	OCR0B = power_right;
+	OCR2B = power_left;
+}
+
+void inch()
+{
+	set_motor_power(25,25);
+	delay_ms(INCH_DELAY_MS);
+	read_sensors();
+	set_motor_power(0,0);
+
+}
+
+void quarterInch()
+{
+	set_motor_power(25, 25);
+	delay_ms(INCH_DELAY_MS/4);
+	read_sensors();
+	set_motor_power(0,0);
+}
+
+void turnLeft()
+{
+	// Make all output compare values 0
+	set_motor_power(0,0);
+
+	// Motor 1 reverse, motor 2 forward
+	OCR0A = 25;
+	OCR2B = 25;
+
+	delay_ms(367);
+	
+	read_sensors();
+	
+	while(lightDarkBits[2] != 1)
+	{
+		
+		read_sensors();
+	}
+	
+	delay_ms(75);
+
+	
+	// Turn off both motors
+	OCR0A = 0;
+	OCR2B = 0;
+}
+
+void turnRight()
+{
+	// Make all output compare values 0
+	set_motor_power(0,0);
+
+	// Motor 1 forward, motor 2 reverse
+	OCR0B = 25;
+	OCR2A = 25;
+
+	delay_ms(367);
+	
+	read_sensors();
+	
+	while(lightDarkBits[2] != 1)
+	{
+		
+		read_sensors();
+	}
+	
+	delay_ms(75);
+
+	// Turn off both motors
+	OCR0B = 0;
+	OCR2A = 0;
+}
+
+/****************** End MOTOR CODE ******************/
+
 /****************** LINE TRACKING CODE ******************/
 void trackLine(float kP)
 {
 
-	int forward_motor_power = 30;
-	const int max = 30; // Maximum value for PID controller
+	int forward_motor_power = 25;
+	const int max = 25; // Maximum value for PID controller
 
 	int error = 0;  // Calculated error
 
@@ -282,7 +291,7 @@ bool detectIntersection()
 		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
-
+			
 		}
 		else
 		{
@@ -318,7 +327,7 @@ bool detectIntersection()
 
 
 
-return false;
+	return false;
 
 }
 
@@ -335,7 +344,7 @@ bool detectIntersectionSolved(){
 		if(lightDarkBits[1] == 0 && lightDarkBits[2] == 0 && lightDarkBits[3] == 0)
 		{
 			turnLeft();
-
+			
 		}
 		else
 		{
@@ -420,7 +429,7 @@ void shiftPath(){
 			}
 			--pathIndex;
 		}
-
+		
 	}
 }
 
@@ -431,24 +440,22 @@ int main()
 {
 	// Initialize motors
 	motors_init();
-
+	
 	for (int i = 0; i < 30; ++i){//initialize path to empty
 		path[i] = 'e';
 	}
 
-	 //loop here forever to keep the program counter from
-	  //running off the end of our program
-while(1){
-		 //Read sensors should return the byte containing whether each sensor was high or low
+	//loop here forever to keep the program counter from
+	//running off the end of our program
+	while(1){
+		//Read sensors should return the byte containing whether each sensor was high or low
 		read_sensors();
-
-
 		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
 			if(detectIntersection()){
 				break;
 			}
-
+			
 			for(int i = 0; i < 3000; ++i){
 				trackLine(25);
 			}
@@ -467,57 +474,57 @@ while(1){
 		}
 	}
 
-		//Handle path simplification
-		bool isDone = false;
-		while(!isDone){
-			isDone = true;
-			for(int i = pathIndex - 1; i >= 0; --i){
-				if(path[i] == 'U'){
-					isDone = false;
-					path[i] = simplifyPath(path[i -1], path[i + 1]);
-					path[i - 1] = 'e';
-					path[i + 1] = 'e';
-					shiftPath();
-				}
+	//Handle path simplification
+	bool isDone = false;
+	while(!isDone){
+		isDone = true;
+		for(int i = pathIndex - 1; i >= 0; --i){
+			if(path[i] == 'U'){
+				isDone = false;
+				path[i] = simplifyPath(path[i -1], path[i + 1]);
+				path[i - 1] = 'e';
+				path[i + 1] = 'e';
+				shiftPath();
 			}
 		}
-
-		set_motor_power(0,0);
-
-		//start bot again with pre-programmed path when sees mid 3 dark
-		pathIndex = 0;
-		DDRB= 0xCE;
-		PORTB = 0x31;
-
-
+	}
+	
+	set_motor_power(0,0);
+	
+	//start bot again with pre-programmed path when sees mid 3 dark
+	pathIndex = 0;
+	DDRB= 0xCE;
+	PORTB = 0x31;
+	
+	
+	read_sensors();
+	while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){
 		read_sensors();
-		while(!(lightDarkBits[0] == 0 && lightDarkBits[1] == 1 && lightDarkBits[2] == 1 && lightDarkBits[3] == 1 && lightDarkBits[4] == 0)){
-			read_sensors();
-		}
-		inch();
-		while (1)
+	}
+	inch();
+	while (1)
+	{
+		// Read sensors should return the byte containing whether each sensor was high or low
+		read_sensors();
+		
+
+		if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
 		{
-			// Read sensors should return the byte containing whether each sensor was high or low
-			read_sensors();
-
-
-			if (lightDarkBits[0] == 1 || lightDarkBits[4] == 1)
-			{
-				if(detectIntersectionSolved()){
-					break;
-				}
-
-				for(int i = 0; i < 3000; ++i){
-					trackLine(25);
-				}
+			if(detectIntersectionSolved()){
+				break;
 			}
-			else
-			{
-				trackLine(7);
+			
+			for(int i = 0; i < 3000; ++i){
+				trackLine(25);
 			}
 		}
-		while(1){
-			turnLeft();
+		else
+		{
+			trackLine(7);
 		}
+	}
+	while(1){
+		turnLeft();
+	}
 	return 0;
 }
